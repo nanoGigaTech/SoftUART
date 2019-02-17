@@ -8,11 +8,11 @@
 
 #define _XTAL_FREQ		  20000000 // FOSC = 20MHz
 
-// FCLK = FOSC/4 for PIC18F uC
+// FCLK = FOSC for PIC18F uC (PLLx4 enabled)
 
 #define UART0_BAUD		  19200
 
-#define UART0_BIT_PERIOD  (0xFFFF - (_XTAL_FREQ/4)/UART0_BAUD)   // 16bit Timer is used
+#define UART0_BIT_PERIOD  (_XTAL_FREQ/UART0_BAUD)   // 16bit Timer is used
 #define UART0_Rx_Pin 	  PORTBbits.RB0 // pin0 of PORTB is external Interrupt0 of PIC18F uC
 #define led0              PORTAbits.RA0
 #define led1              PORTAbits.RA1
@@ -42,13 +42,13 @@ void main()
    
     T0CONbits.TMR0ON 	= 0; // Turn-off timer
     T0CONbits.T08BIT 	= 0; // 16bit timer
-    T0CONbits.T0CS 		= 0; // System CLOCK as input
-    T0CONbits.PSA		= 1; // no Pre-scalar. i.e., clock=Fosc/4
+    T0CONbits.T0CS 	= 0; // System CLOCK as input
+    T0CONbits.PSA	= 1; // no Pre-scalar. i.e., clock=Fosc/4
     INTCONbits.TMR0IF	= 0; // clear Interrupt flag if any
     INTCONbits.TMR0IE 	= 1; // enable Timer0 interrupt
 
     INTCONbits.PEIE 	= 1; 	// enable Peripherial interrupt
-    INTCONbits.GIE 		= 1;		// enable Global Interrupt
+    INTCONbits.GIE 	= 1;		// enable Global Interrupt
     
     while (1) // Super loop
     {} // USER code
@@ -60,9 +60,9 @@ void interrupt low_priority myISR()
 {
     if (INTCONbits.INT0F) // start bit detected
     {
-		INTCONbits.INT0F = 0;
+	INTCONbits.INT0F = 0;
         INTCONbits.INT0E=0;
-        TMR0 = UART0_BIT_PERIOD/2; // half bit period
+        TMR0 = 65035;//0xFFFF - UART0_BIT_PERIOD/2; // half bit period
         T0CONbits.TMR0ON=1;
     }
     
@@ -71,7 +71,7 @@ void interrupt low_priority myISR()
         INTCONbits.TMR0IF=0;
         
         T0CONbits.TMR0ON=0;
-        TMR0 = UART0_BIT_PERIOD; // 1 bit PERIOD
+        TMR0 = 64535;// 0xFFFF - UART0_BIT_PERIOD; // 1 bit PERIOD
         
         if ( (bit0No==0) && (UART0_Rx_Pin==0) ) // Check start bit (if it is still '0')
         {
